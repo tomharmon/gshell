@@ -20,7 +20,7 @@ fn main() {
 /// Tokens are the individual pieces that make up a shell command.
 /// # Examples
 /// ## Command
-/// Commands consist of all the standard builtin bash programs. Examples of valid commands: `cd`, `pwd`, `echo`, `grip`, etc
+/// Commands consist of all the standard builtin bash programs. Examples of valid commands: `cd`, `pwd`, `echo`, `grep`, etc
 /// ## Arg
 /// Args are arguments to a given program. Eg for the command `echo hi people`, `hi` `people` would be args.
 /// ## Semicolon
@@ -44,6 +44,7 @@ pub enum Token {
     OR,
     AND,
     BACKGROUND,
+    EOF,
 }
 
 mod lexer {
@@ -54,9 +55,18 @@ mod lexer {
         return vec![];
     }
 
-    /// Iterate over the given string `s` until `predicate` is no longer true.
+    fn get_next_token(input: &str) -> Token {
+        let trimmed_input = input.trim_start();
+
+        
+
+        return Token::EOF;
+
+    }
+
+    /// Return `s` from start until `predicate` is no longer true.
     /// Is there a better error type to use?
-    fn skip_while<F>(s: &str, predicate: F) -> Result<&str, &'static str>
+    fn keep_while<F>(s: &str, predicate: F) -> Result<&str, &'static str>
     where
         F: Fn(char) -> bool,
     {
@@ -72,12 +82,15 @@ mod lexer {
         if i == 0 {
             return Err("No characters matched predicate");
         } else {
-            return Ok(&s[i..]);
+            return Ok(&s[..i]);
         }
     }
 
     fn skip_whitespace(s: &str) -> &str {
-        return skip_while(s, |c| c.is_whitespace()).unwrap();
+        match s.chars().position(|c| !c.is_whitespace()) {
+            None => return s,
+            Some(index) => return &s[index..],
+        }
     }
 }
 
