@@ -42,15 +42,15 @@ pub fn tokenize(input: &String, tokens: &mut Vec<Token>) {
             let mut s = String::from(c.to_string());
             let closure = |x: char| -> bool {
                 x != '<'
-                    || x != '>'
-                    || x != '|'
-                    || x != '&'
-                    || x != ';'
-                    || !x.is_whitespace()
-                    || x != '\''
-                    || x != '\"'
+                    && x != '>'
+                    && x != '|'
+                    && x != '&'
+                    && x != ';'
+                    && !x.is_whitespace()
+                    && x != '\''
+                    && x != '\"'
             };
-            keep_while(&mut s, closure, &mut input_iter);
+            keep_while_ex(&mut s, closure, &mut input_iter);
             tokens.push(Token::CommandOrArgument(s));
         }
     }
@@ -103,6 +103,20 @@ where
     }
 }
 
+/// Return `s` from start until `predicate` is no longer true.
+/// Is there a better error type to use?
+fn keep_while_ex<F, T>(s: &mut String, predicate: F, iter: &mut Peekable<T>)
+where
+    F: Fn(char) -> bool,
+    T: Iterator<Item = char>,
+{
+    while let Some(c) = iter.next() {
+        s.push(c);
+        if !predicate(*(iter.peek().unwrap_or(&'x'))) {
+            break;
+        }
+    }
+}
 #[cfg(test)]
 mod test_lexer {
     use super::*;
