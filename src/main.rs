@@ -16,12 +16,6 @@ fn main() {
         let mut tokens: Vec<enums::Token> = Vec::new();
 
         lexer::tokenize(&mut input, &mut tokens);
-
-
-
-        // for s in input.split_ascii_whitespace() {
-        //     println!("{}", s);
-        // }
     }
 }
 

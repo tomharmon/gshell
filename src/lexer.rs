@@ -54,7 +54,6 @@ pub fn tokenize(input: &String, tokens: &mut Vec<Token>) {
             tokens.push(Token::CommandOrArgument(s));
         }
     }
-    println!("hello world");
     for t in tokens {
         println!("{:?}", t);
     }
@@ -72,9 +71,9 @@ where T: Iterator<Item = char>
             sqmode = false;
         } else if dqmode && c == '\"' {
             dqmode = false;
-        } else if c == ')' {
+        } else if !sqmode && !dqmode && c == ')' {
             ends += 1;
-        } else if c == '(' {
+        } else if !sqmode &&!dqmode && c == '(' {
             starts += 1;
         } else if c == '\'' {
             sqmode = true;
