@@ -3,9 +3,9 @@ use std::iter::Peekable;
 
 
 /// Converts a shell input into a vector of tokens.
-pub fn tokenize(input: &String, mut tokens: Vec<Token>) {
+pub fn tokenize(input: &String, tokens: &mut Vec<Token>) {
     let mut input_iter = input.chars().peekable();
-    for c in input_iter {
+    while let Some(c) = input_iter.next() {
         if c == ';' {
             tokens.push(Token::Operator(Operator::Semicolon));
         } else if c == '<' {
@@ -39,19 +39,24 @@ pub fn tokenize(input: &String, mut tokens: Vec<Token>) {
             read_until_close_paren(&mut s, &mut input_iter);
             tokens.push(Token::CommandOrArgument(s));
         } else if !c.is_whitespace() {
-            let mut s = String::new();
+            let mut s = String::from(c.to_string());
             let closure = |x: char| -> bool {
                 x != '<'
                     || x != '>'
                     || x != '|'
                     || x != '&'
                     || x != ';'
-                    || x.is_whitespace()
+                    || !x.is_whitespace()
                     || x != '\''
                     || x != '\"'
             };
             keep_while(&mut s, closure, &mut input_iter);
+            tokens.push(Token::CommandOrArgument(s));
         }
+    }
+    println!("hello world");
+    for t in tokens {
+        println!("{:?}", t);
     }
 }
 

@@ -13,9 +13,11 @@ fn main() {
             .read_line(&mut input)
             .expect("failed to read line");
 
-        let tokens: Vec<enums::Token> = Vec::new();
+        let mut tokens: Vec<enums::Token> = Vec::new();
 
-        lexer::tokenize(&input, tokens);
+        lexer::tokenize(&mut input, &mut tokens);
+
+
 
         // for s in input.split_ascii_whitespace() {
         //     println!("{}", s);
