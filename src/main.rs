@@ -2,6 +2,7 @@ use std::io::{self, Write};
 
 mod lexer;
 mod enums;
+mod ast;
 
 fn main() {
     loop {
@@ -16,6 +17,9 @@ fn main() {
         let mut tokens: Vec<enums::Token> = Vec::new();
 
         lexer::tokenize(&mut input, &mut tokens);
+
+        let ast = ast::make_ast(&tokens);
+        println!("{:?}", ast);
     }
 }
 
