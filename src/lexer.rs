@@ -1,4 +1,4 @@
-use super::enums::{Token, Operator};
+use super::enums::{Token, Op};
 use std::iter::Peekable;
 
 
@@ -7,24 +7,24 @@ pub fn tokenize(input: &String, tokens: &mut Vec<Token>) {
     let mut input_iter = input.chars().peekable();
     while let Some(c) = input_iter.next() {
         if c == ';' {
-            tokens.push(Token::Operator(Operator::Semicolon));
+            tokens.push(Token::Operator(Op::Semicolon));
         } else if c == '<' {
-            tokens.push(Token::Operator(Operator::RedirectLeft));
+            tokens.push(Token::Operator(Op::RedirectLeft));
         } else if c == '>' {
-            tokens.push(Token::Operator(Operator::RedirectRight));
+            tokens.push(Token::Operator(Op::RedirectRight));
         } else if c == '&' {
             if input_iter.peek().unwrap_or(&' ') == &'&' {
-                tokens.push(Token::Operator(Operator::And));
+                tokens.push(Token::Operator(Op::And));
                 input_iter.next();
             } else {
-                tokens.push(Token::Operator(Operator::Background));
+                tokens.push(Token::Operator(Op::Background));
             }
         } else if c == '|' {
             if *input_iter.peek().unwrap_or(&' ') == '|' {
-                tokens.push(Token::Operator(Operator::Or));
+                tokens.push(Token::Operator(Op::Or));
                 input_iter.next();
             } else {
-                tokens.push(Token::Operator(Operator::Pipe));
+                tokens.push(Token::Operator(Op::Pipe));
             }
         } else if c == '\'' {
             let mut s = String::from("\'");

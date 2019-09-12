@@ -4,7 +4,7 @@
 /// Commands consist of all the standard builtin bash programs. Examples of valid commands: `cd`, `pwd`, `echo`, `grep`, etc
 #[derive(Debug)]
 pub enum Token {
-    Operator(Operator),
+    Operator(Op),
     CommandOrArgument(String),
 }
 
@@ -14,7 +14,7 @@ pub enum Token {
 // }
 
 #[derive(Debug)]
-pub enum Operator {
+pub enum Op {
     Semicolon,
     Pipe,
     RedirectLeft,
