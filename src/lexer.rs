@@ -1,6 +1,5 @@
-use super::enums::{Token, Op};
+use super::enums::{Op, Token};
 use std::iter::Peekable;
-
 
 /// Converts a shell input into a vector of tokens.
 pub fn tokenize(input: &String, tokens: &mut Vec<Token>) {
@@ -27,12 +26,12 @@ pub fn tokenize(input: &String, tokens: &mut Vec<Token>) {
                 tokens.push(Token::Operator(Op::Pipe));
             }
         } else if c == '\'' {
-            let mut s = String::from("\'");
-            keep_while(&mut s, |x| x != '\'', &mut input_iter);
+            let mut s = String::new();
+            keep_until(&mut s, |x| x != '\'', &mut input_iter);
             tokens.push(Token::CommandOrArgument(s));
         } else if c == '\"' {
-            let mut s = String::from("\"");
-            keep_while(&mut s, |x| x != '\"', &mut input_iter);
+            let mut s = String::new();
+            keep_until(&mut s, |x| x != '\"', &mut input_iter);
             tokens.push(Token::CommandOrArgument(s));
         } else if c == '(' {
             let mut s = String::from("(");
@@ -41,26 +40,17 @@ pub fn tokenize(input: &String, tokens: &mut Vec<Token>) {
         } else if !c.is_whitespace() {
             let mut s = String::from(c.to_string());
             let closure = |x: char| -> bool {
-                x != '<'
-                    && x != '>'
-                    && x != '|'
-                    && x != '&'
-                    && x != ';'
-                    && !x.is_whitespace()
-                    && x != '\''
-                    && x != '\"'
+                x != '<' && x != '>' && x != '|' && x != '&' && x != ';' && !x.is_whitespace() && x != '\'' && x != '\"'
             };
             keep_while_ex(&mut s, closure, &mut input_iter);
             tokens.push(Token::CommandOrArgument(s));
         }
     }
-    for t in tokens {
-        println!("{:?}", t);
-    }
 }
 
-fn read_until_close_paren<T>(s: &mut String, iter: &mut Peekable<T>) 
-where T: Iterator<Item = char>
+fn read_until_close_paren<T>(s: &mut String, iter: &mut Peekable<T>)
+where
+    T: Iterator<Item = char>,
 {
     let mut starts = 1;
     let mut ends = 0;
@@ -73,7 +63,7 @@ where T: Iterator<Item = char>
             dqmode = false;
         } else if !sqmode && !dqmode && c == ')' {
             ends += 1;
-        } else if !sqmode &&!dqmode && c == '(' {
+        } else if !sqmode && !dqmode && c == '(' {
             starts += 1;
         } else if c == '\'' {
             sqmode = true;
@@ -89,18 +79,20 @@ where T: Iterator<Item = char>
 
 /// Return `s` from start until `predicate` is no longer true.
 /// Is there a better error type to use?
-fn keep_while<F, T>(s: &mut String, predicate: F, iter: &mut Peekable<T>)
+fn keep_until<F, T>(s: &mut String, predicate: F, iter: &mut Peekable<T>)
 where
     F: Fn(char) -> bool,
     T: Iterator<Item = char>,
 {
     for c in iter {
-        s.push(c);
         if !predicate(c) {
             break;
         }
+        s.push(c);
     }
 }
+
+
 
 /// Return `s` from start until `predicate` is no longer true.
 /// Is there a better error type to use?
@@ -109,6 +101,9 @@ where
     F: Fn(char) -> bool,
     T: Iterator<Item = char>,
 {
+    if !predicate(*(iter.peek().unwrap_or(&'x'))) {
+        return;
+    }
     while let Some(c) = iter.next() {
         s.push(c);
         if !predicate(*(iter.peek().unwrap_or(&'x'))) {
