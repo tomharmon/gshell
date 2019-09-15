@@ -1,102 +1,13 @@
-use super::enums::{Op, Token};
 use std::process::Command;
-use super::lexer;
+use std::io::{self, Write};
 
-fn find_last_occ(op: &Op, tokens: &Vec<Token>) -> Option<usize> {
-    for n in (0..tokens.len()).rev() {
-        match &tokens[n] {
-            Token::Operator(o) => {
-                if o == op {
-                    return Some(n);
-                }
-            }
-            Token::CommandOrArgument(_) => continue,
-        }
-    }
-    return None;
-}
+use super::enums::{Op, Token};
+use super::lexer;
 
 #[derive(Debug)]
 pub enum Ast {
     Node(Box<Option<Ast>>, Box<Option<Ast>>, Op),
     Leaf(Command),
-}
-
-pub fn make_ast(tokens: &Vec<Token>) -> Result<Box<Option<Ast>>, String> {
-    let operators = [
-        Op::Semicolon,
-        Op::Background,
-        Op::And,
-        Op::Or,
-        Op::Pipe,
-        Op::RedirectLeft,
-        Op::RedirectRight,
-    ];
-
-    for op in operators.iter() {
-        let idx = find_last_occ(&op, tokens);
-        match idx {
-            Some(n) => {
-                println!("{}", n);
-                if n == tokens.len() - 1 {
-                    let left_tree = make_ast(&(tokens[..n]).to_vec());
-                    match left_tree {
-                        Ok(tree) => return Ok(Box::new(Some(Ast::Node(tree, Box::new(None), *op)))),
-                        x => return x,
-                    }
-                } else if n == 0 {
-                    return Err(format!(
-                        "Unexpected Token found {:?} at the start of an expression",
-                        *op
-                    ));
-                } else {
-                    let left_tree = make_ast(&(tokens[..n]).to_vec());
-                    let right_tree = make_ast(&(tokens[n + 1..]).to_vec());
-                    match (left_tree, right_tree) {
-                        (Ok(l_tree), Ok(r_tree)) => return Ok(Box::new(Some(Ast::Node(l_tree, r_tree, *op)))),
-                        (Err(x), _) => return Err(x),
-                        (_, Err(x)) => return Err(x),
-                    }
-                }
-            }
-            None => continue,
-        }
-    }
-
-    if tokens.len() == 1 {
-        match &tokens[0] {
-            Token::CommandOrArgument(x) => {
-                if x.starts_with('(') && x.ends_with(')') {
-                    let mut new_str = &(x.as_str()[1..x.len()-1]).to_string();
-                    let mut new_tokens: Vec<Token> = Vec::new();
-                    lexer::tokenize(&mut new_str, &mut new_tokens);
-                    return make_ast(&new_tokens);
-                }
-            },
-            _ => (),
-        }
-    }
-
-    //there are no operators left
-    //TODO: Parenths
-    let mut iter = tokens.iter();
-    let mut comm; //= Command::new("echo");
-    match iter.next() {
-        Some(Token::CommandOrArgument(command)) => {
-            comm = Command::new(command);
-            for tok in iter {
-                match tok {
-                    Token::Operator(_) => println!("Parsing error"),
-                    //recursively parse if it has parenths eg: (echo hello; cat new && ok)
-                    Token::CommandOrArgument(x) => {
-                        comm.arg(x);
-                    }
-                }
-            }
-            return Ok(Box::new(Some(Ast::Leaf(comm))));
-        }
-        _ => return Ok(Box::new(None)),
-    }
 }
 
 // pub struct Node
@@ -105,3 +16,44 @@ pub fn make_ast(tokens: &Vec<Token>) -> Result<Box<Option<Ast>>, String> {
 //     right : Ast,
 //     operator : Operator,
 // }
+
+fn eval_ast(tree: Ast) -> () {
+    match tree {
+        Ast::Leaf(mut command) => {
+            let output = command.output().expect("could eval an ast leaf");
+            io::stdout().write_all(&output.stdout).unwrap();
+            io::stderr().write_all(&output.stderr).unwrap();
+        },
+        // check for semi colon
+        Ast::Node(left_child, right_child, Op::Semicolon) => {
+            eval_ast((*left_child).unwrap());
+            match *right_child {
+                Some(ast) => eval_ast(ast),
+                None => (),
+            }
+        },
+        // check for background operator
+        // TODO: need to add a flag to eval_ast function signature or something
+        // or find out how to fork in rust and call eval_ast after forking
+        Ast::Node(left_child, right_child, Op::Background) => {
+            eval_ast((*left_child).unwrap());
+            match *right_child {
+                Some(ast) => eval_ast(ast),
+                None => (),
+            }
+        },
+        // check for redirect left or right
+        Ast::Node(left_child, right_child, Op::RedirectLeft) | Ast::Node(left_child, right_child, Op::RedirectRight) => {
+            // TODO: either Inherit stdin/stdout/stderr for spawn or status, or create pipes for command.output()
+        },
+        // check for && or ||
+        Ast::Node(left_child, right_child, Op::And) | Ast::Node(left_child, right_child, Op::Or) => {
+            // TODO need make eval_ast return value to do && and ||
+            eval_ast((*left_child).unwrap());
+        },
+        // check for |
+        Ast::Node(left_child, right_child, Op::Pipe) => {
+            // TODO
+        },
+    }
+}

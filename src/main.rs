@@ -1,6 +1,7 @@
 use std::io::{self, Write};
 
 mod ast;
+mod parser;
 mod enums;
 mod lexer;
 
@@ -16,7 +17,7 @@ fn main() {
 
         lexer::tokenize(&mut input, &mut tokens);
 
-        let ast = ast::make_ast(&tokens);
+        let ast = parser::make_ast(&tokens);
         println!("{:?}", ast);
     }
 }
