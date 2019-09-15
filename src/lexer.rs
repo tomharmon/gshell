@@ -92,8 +92,6 @@ where
     }
 }
 
-
-
 /// Return `s` from start until `predicate` is no longer true.
 /// Is there a better error type to use?
 fn keep_while_ex<F, T>(s: &mut String, predicate: F, iter: &mut Peekable<T>)

@@ -1,8 +1,10 @@
-
 use std::process::Command;
-use super::enums::{Op, Token};
+use std::fs::File;
+
 use super::ast::Ast;
+use super::enums::{Op, Token};
 use super::lexer;
+
 
 fn find_last_occ(op: &Op, tokens: &Vec<Token>) -> Option<usize> {
     for n in (0..tokens.len()).rev() {
@@ -25,8 +27,8 @@ pub fn make_ast(tokens: &Vec<Token>) -> Result<Box<Option<Ast>>, String> {
         Op::And,
         Op::Or,
         Op::Pipe,
-        Op::RedirectLeft,
-        Op::RedirectRight,
+        //Op::RedirectLeft,
+        //Op::RedirectRight,
     ];
 
     for op in operators.iter() {
@@ -59,16 +61,40 @@ pub fn make_ast(tokens: &Vec<Token>) -> Result<Box<Option<Ast>>, String> {
         }
     }
 
+    let len = tokens.len();
+    match (&tokens[len - 2], &tokens[len-1]) {
+        (Token::Operator(Op::RedirectRight), Token::CommandOrArgument(file_name)) => {
+            let left_tree = make_ast(&(tokens[..len-2]).to_vec());
+            let file = File::create(file_name);
+            match (left_tree, file) {
+                (Ok(tree), Ok(f)) => return Ok(Box::new(Some(Ast::Node(tree, Box::new(Some(Ast::File(f))), Op::RedirectRight)))),
+                (Err(x), _) => return Err(x),
+                (_, Err(x)) => return Err(x.to_string()),
+            }
+        }
+        (Token::Operator(Op::RedirectLeft), Token::CommandOrArgument(file_name)) => {
+            let left_tree = make_ast(&(tokens[..len-2]).to_vec());
+            let file = File::open(file_name);
+            match (left_tree, file) {
+                (Ok(tree), Ok(f)) => return Ok(Box::new(Some(Ast::Node(tree, Box::new(Some(Ast::File(f))), Op::RedirectLeft)))),
+                (Err(x), _) => return Err(x),
+                (_, Err(x)) => return Err(x.to_string()),
+            }
+        }
+        _ => ()
+    }
+
+    // No operators should be left at this point
     if tokens.len() == 1 {
         match &tokens[0] {
             Token::CommandOrArgument(x) => {
                 if x.starts_with('(') && x.ends_with(')') {
-                    let mut new_str = &(x.as_str()[1..x.len()-1]).to_string();
+                    let mut new_str = &(x.as_str()[1..x.len() - 1]).to_string();
                     let mut new_tokens: Vec<Token> = Vec::new();
                     lexer::tokenize(&mut new_str, &mut new_tokens);
                     return make_ast(&new_tokens);
                 }
-            },
+            }
             _ => (),
         }
     }
@@ -76,7 +102,7 @@ pub fn make_ast(tokens: &Vec<Token>) -> Result<Box<Option<Ast>>, String> {
     //there are no operators left
     //TODO: Parenths
     let mut iter = tokens.iter();
-    let mut comm; //= Command::new("echo");
+    let mut comm;
     match iter.next() {
         Some(Token::CommandOrArgument(command)) => {
             comm = Command::new(command);

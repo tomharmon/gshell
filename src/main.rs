@@ -1,9 +1,9 @@
 use std::io::{self, Write};
 
 mod ast;
-mod parser;
 mod enums;
 mod lexer;
+mod parser;
 
 fn main() {
     loop {
