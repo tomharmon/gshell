@@ -109,10 +109,3 @@ where
         }
     }
 }
-#[cfg(test)]
-mod test_lexer {
-    use super::*;
-
-    #[test]
-    fn test_tokenize() {}
-}
