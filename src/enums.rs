@@ -5,13 +5,8 @@
 #[derive(Debug, Clone)]
 pub enum Token {
     Operator(Op),
-    CommandOrArgument(String),
+    Input(String),
 }
-
-// pub enum CommandOrArgument {
-//     Command(String),
-//     Argument(String)
-// }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Op {

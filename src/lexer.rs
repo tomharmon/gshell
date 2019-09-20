@@ -28,22 +28,22 @@ pub fn tokenize(input: &String, tokens: &mut Vec<Token>) {
         } else if c == '\'' {
             let mut s = String::new();
             keep_until(&mut s, |x| x != '\'', &mut input_iter);
-            tokens.push(Token::CommandOrArgument(s));
+            tokens.push(Token::Input(s));
         } else if c == '\"' {
             let mut s = String::new();
             keep_until(&mut s, |x| x != '\"', &mut input_iter);
-            tokens.push(Token::CommandOrArgument(s));
+            tokens.push(Token::Input(s));
         } else if c == '(' {
             let mut s = String::from("(");
             read_until_close_paren(&mut s, &mut input_iter);
-            tokens.push(Token::CommandOrArgument(s));
+            tokens.push(Token::Input(s));
         } else if !c.is_whitespace() {
             let mut s = String::from(c.to_string());
             let closure = |x: char| -> bool {
                 x != '<' && x != '>' && x != '|' && x != '&' && x != ';' && !x.is_whitespace() && x != '\'' && x != '\"'
             };
             keep_while_ex(&mut s, closure, &mut input_iter);
-            tokens.push(Token::CommandOrArgument(s));
+            tokens.push(Token::Input(s));
         }
     }
 }
