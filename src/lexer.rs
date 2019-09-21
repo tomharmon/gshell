@@ -1,7 +1,7 @@
 use super::enums::{Op, Token};
 use std::iter::Peekable;
 
-/// Converts a shell input into a vector of tokens.
+/// Converts a shell input string into a vector of tokens.
 pub fn tokenize(input: &String, tokens: &mut Vec<Token>) {
     let mut input_iter = input.chars().peekable();
     while let Some(c) = input_iter.next() {
@@ -19,7 +19,7 @@ pub fn tokenize(input: &String, tokens: &mut Vec<Token>) {
                 tokens.push(Token::Operator(Op::Background));
             }
         } else if c == '|' {
-            if *input_iter.peek().unwrap_or(&' ') == '|' {
+            if input_iter.peek().unwrap_or(&' ') == &'|' {
                 tokens.push(Token::Operator(Op::Or));
                 input_iter.next();
             } else {
@@ -27,11 +27,11 @@ pub fn tokenize(input: &String, tokens: &mut Vec<Token>) {
             }
         } else if c == '\'' {
             let mut s = String::new();
-            keep_until(&mut s, |x| x != '\'', &mut input_iter);
+            keep_until(&mut s, |x| x == '\'', &mut input_iter);
             tokens.push(Token::Input(s));
         } else if c == '\"' {
             let mut s = String::new();
-            keep_until(&mut s, |x| x != '\"', &mut input_iter);
+            keep_until(&mut s, |x| x == '\"', &mut input_iter);
             tokens.push(Token::Input(s));
         } else if c == '(' {
             let mut s = String::from("(");
@@ -40,7 +40,7 @@ pub fn tokenize(input: &String, tokens: &mut Vec<Token>) {
         } else if !c.is_whitespace() {
             let mut s = String::from(c.to_string());
             let closure = |x: char| -> bool {
-                x != '<' && x != '>' && x != '|' && x != '&' && x != ';' && !x.is_whitespace() && x != '\'' && x != '\"'
+                x == '<' || x == '>' || x == '|' || x == '&' || x == ';' || x.is_whitespace() || x == '\'' || x == '\"'
             };
             keep_while_ex(&mut s, closure, &mut input_iter);
             tokens.push(Token::Input(s));
@@ -77,34 +77,32 @@ where
     }
 }
 
-/// Return `s` from start until `predicate` is no longer true.
-/// Is there a better error type to use?
+/// Return `s` from start until `predicate` is true, exclusive.
 fn keep_until<F, T>(s: &mut String, predicate: F, iter: &mut Peekable<T>)
 where
     F: Fn(char) -> bool,
     T: Iterator<Item = char>,
 {
     for c in iter {
-        if !predicate(c) {
+        if predicate(c) {
             break;
         }
         s.push(c);
     }
 }
 
-/// Return `s` from start until `predicate` is no longer true.
-/// Is there a better error type to use?
+/// Return `s` from start until `predicate` is true.
 fn keep_while_ex<F, T>(s: &mut String, predicate: F, iter: &mut Peekable<T>)
 where
     F: Fn(char) -> bool,
     T: Iterator<Item = char>,
 {
-    if !predicate(*(iter.peek().unwrap_or(&'x'))) {
+    if predicate(*(iter.peek().unwrap_or(&'x'))) {
         return;
     }
     while let Some(c) = iter.next() {
         s.push(c);
-        if !predicate(*(iter.peek().unwrap_or(&'x'))) {
+        if predicate(*(iter.peek().unwrap_or(&'x'))) {
             break;
         }
     }

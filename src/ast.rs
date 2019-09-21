@@ -1,6 +1,5 @@
-
-use std::process::{Command, Stdio};
 use std::fs::File;
+use std::process::{Command, Stdio};
 use std::thread;
 
 use super::enums::{Op, Token};
@@ -8,15 +7,8 @@ use super::enums::{Op, Token};
 #[derive(Debug)]
 pub enum Ast {
     Node(Box<Option<Ast>>, Box<Option<Ast>>, Op),
-    Leaf(String, Vec<String>)
+    Leaf(String, Vec<String>),
 }
-
-// pub struct Node
-// {
-//     left  : Ast,
-//     right : Ast,
-//     operator : Operator,
-// }
 
 pub fn eval_ast(tree: Box<Option<Ast>>) -> Option<i32> {
     match *tree {
@@ -39,7 +31,7 @@ pub fn eval_ast(tree: Box<Option<Ast>>) -> Option<i32> {
                         (x, None) => return x,
                         (Some(x), Some(y)) => return if x != 0 { Some(x) } else { Some(y) },
                     }
-                },
+                }
                 None => return left_rv,
             }
         }
@@ -60,12 +52,11 @@ pub fn eval_ast(tree: Box<Option<Ast>>) -> Option<i32> {
             // });
             match *right_child {
                 Some(Ast::Leaf(file, _trash)) => {
-
                     // thread::spawn(move || {
                     //     eval_ast(left_child);
                     // });
                     return eval_ast(left_child);
-                },
+                }
                 _ => panic!("no file :( "),
             }
         }
@@ -87,7 +78,7 @@ pub fn eval_ast(tree: Box<Option<Ast>>) -> Option<i32> {
                         return left_rv;
                     }
                 }
-                None => { 
+                None => {
                     return eval_ast(right_child);
                 }
             }

@@ -18,10 +18,15 @@ fn main() {
         lexer::tokenize(&mut input, &mut tokens);
 
         let ast = parser::make_ast(&tokens);
+
         println!("{:?}", ast);
         match ast {
-            Ok(ast) =>  { ast::eval_ast(ast); },
-            Err(message) => { println!("{}", message); },
+            Ok(ast) => {
+                ast::eval_ast(ast);
+            }
+            Err(message) => {
+                println!("{}", message);
+            }
         }
     }
 }
