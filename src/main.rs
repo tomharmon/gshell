@@ -19,5 +19,9 @@ fn main() {
 
         let ast = parser::make_ast(&tokens);
         println!("{:?}", ast);
+        match ast {
+            Ok(ast) =>  { ast::eval_ast(ast); },
+            Err(message) => { println!("{}", message); },
+        }
     }
 }
