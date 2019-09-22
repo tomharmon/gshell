@@ -53,6 +53,20 @@ pub fn eval_ast(tree: Box<Option<Ast>>) -> Result<WaitStatus, String> {
                 Err(e)=> Err(String::from(e.description())),
             }
         },
+        Some(Ast::Node(left_child, right_child, Op::And)) => {
+            let left_rv = eval_ast(left_child);
+            if success(&left_rv) {
+                return eval_ast(right_child);
+            }
+            left_rv
+        }
+        Some(Ast::Node(left_child, right_child, Op::Or)) => {
+            let left_rv = eval_ast(left_child);
+            if !success(&left_rv) {
+                return eval_ast(right_child);
+            }
+            left_rv
+        }
         _ => Err(String::from("Unknown error")),
     }
 }
