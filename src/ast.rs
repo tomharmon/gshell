@@ -1,7 +1,10 @@
-use nix::unistd::{ForkResult, fork};
+use nix::unistd::{ForkResult, fork, close, dup, execvp };
 use nix::sys::wait::{ waitpid, WaitStatus };
 use std::ffi::CString;
+use std::fs::File;
 use std::error::Error;
+use std::io::{stdin, stdout};
+use std::os::unix::io::AsRawFd;
 
 use super::enums::Op;
 
@@ -22,7 +25,7 @@ pub fn eval_ast(tree: Box<Option<Ast>>) -> Result<WaitStatus, String> {
                     }
                 },
                 Ok(ForkResult::Child) => { 
-                    nix::unistd::execvp(&c, &args); 
+                    execvp(&c, &args); 
                     return Err(String::from("Execution error"))
                 },
                 Err(e)=> Err(String::from(e.description())),
@@ -67,6 +70,54 @@ pub fn eval_ast(tree: Box<Option<Ast>>) -> Result<WaitStatus, String> {
             }
             left_rv
         }
+        Some(Ast::Node(left_child, right_child, Op::RedirectLeft)) => {
+            match fork() {
+                Ok(ForkResult::Parent {child, ..}) => {
+                    match waitpid(child, None) {
+                        Ok(x) => Ok(x),
+                        Err(e) => Err(String::from(e.description()))
+                    }
+                },
+                Ok(ForkResult::Child) => {
+                    match *right_child {
+                        Some(Ast::Leaf(fileName, _)) => {
+                            let file = File::open(fileName.into_string().unwrap()).unwrap().as_raw_fd();
+                            close(stdin().as_raw_fd());
+                            dup(file);
+                            close(file);
+                            return eval_ast(left_child);
+                        }
+                        _ => { return Err(String::from("Expected file after <")); }
+                    }
+                },
+                Err(e)=> Err(String::from(e.description())),
+            }
+        },
+        Some(Ast::Node(left_child, right_child, Op::RedirectRight)) => {
+            match fork() {
+                Ok(ForkResult::Parent {child, ..}) => {
+                    match waitpid(child, None) {
+                        Ok(x) => Ok(x),
+                        Err(e) => Err(String::from(e.description()))
+                    }
+                },
+                Ok(ForkResult::Child) => {
+                    match *right_child {
+                        Some(Ast::Leaf(fileName, _)) => {
+                            let file = File::create(fileName.into_string().unwrap()).unwrap().as_raw_fd();
+                            close(stdout().as_raw_fd());
+                            dup(file);
+                            close(file);
+                            return eval_ast(left_child);
+                        }
+                        _ => { return Err(String::from("Expected file after <")); }
+                    }
+                },
+                Err(e)=> Err(String::from(e.description())),
+            }
+        },
+
+
         _ => Err(String::from("Unknown error")),
     }
 }
