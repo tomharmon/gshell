@@ -1,5 +1,6 @@
 use super::enums::{Op, Token};
 use std::iter::Peekable;
+use std::ffi::CString;
 
 /// Converts a shell input string into a vector of tokens.
 pub fn tokenize(input: &String, tokens: &mut Vec<Token>) {
@@ -28,22 +29,22 @@ pub fn tokenize(input: &String, tokens: &mut Vec<Token>) {
         } else if c == '\'' {
             let mut s = String::new();
             keep_until(&mut s, |x| x == '\'', &mut input_iter);
-            tokens.push(Token::Input(s));
+            tokens.push(Token::Input(CString::new(s).expect("Cannot convert to CStirng")));
         } else if c == '\"' {
             let mut s = String::new();
             keep_until(&mut s, |x| x == '\"', &mut input_iter);
-            tokens.push(Token::Input(s));
+            tokens.push(Token::Input(CString::new(s).expect("Cannot convert to CStirng")));
         } else if c == '(' {
             let mut s = String::from("(");
             read_until_close_paren(&mut s, &mut input_iter);
-            tokens.push(Token::Input(s));
+            tokens.push(Token::Input(CString::new(s).expect("Cannot convert to CStirng")));
         } else if !c.is_whitespace() {
             let mut s = String::from(c.to_string());
             let closure = |x: char| -> bool {
                 x == '<' || x == '>' || x == '|' || x == '&' || x == ';' || x.is_whitespace() || x == '\'' || x == '\"'
             };
             keep_while_ex(&mut s, closure, &mut input_iter);
-            tokens.push(Token::Input(s));
+            tokens.push(Token::Input(CString::new(s).expect("Cannot convert to CStirng")));
         }
     }
 }

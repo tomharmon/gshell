@@ -1,3 +1,5 @@
+use std::ffi::CString;
+
 /// Tokens are the individual pieces that make up a shell command.
 /// # Examples
 ///
@@ -10,7 +12,7 @@
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
     Operator(Op),
-    Input(String),
+    Input(CString),
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]

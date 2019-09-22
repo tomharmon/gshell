@@ -59,6 +59,7 @@ pub fn make_ast(tokens: &Vec<Token>) -> Result<Box<Option<Ast>>, String> {
     if tokens.len() == 1 {
         match &tokens[0] {
             Token::Input(x) => {
+                let s = x.to_str().unwrap();
                 if x.starts_with('(') && x.ends_with(')') {
                     let mut new_str = &(x.as_str()[1..x.len() - 1]).to_string();
                     let mut new_tokens: Vec<Token> = Vec::new();
