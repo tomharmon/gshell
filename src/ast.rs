@@ -14,7 +14,18 @@ pub enum Ast {
 }
 
 pub fn eval_ast(tree: Box<Option<Ast>>) -> Option<i32> {
-    None
+    match *tree {
+        Some(Ast::Leaf(c, args)) => {
+            match fork() {
+                Ok(ForkResult::Parent {child, ..}) => { waitpid(child, None); },
+                Ok(ForkResult::Child) => { nix::unistd::execvp(&c, &args); },
+                Err(e)=> { println!("Fork Failed"); }
+            }
+            return Some(1);
+        }
+        _ => None
+
+    }
 }
    /* match *tree {x
         Some(Ast::Leaf(c, args)) => {

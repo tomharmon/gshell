@@ -1,7 +1,6 @@
 use super::ast::Ast;
 use super::enums::{Op, Token};
 use super::lexer;
-use std::ffi::CString;
 
 fn find_last_occ(op: &Op, tokens: &Vec<Token>) -> Option<usize> {
     for n in (0..tokens.len()).rev() {
@@ -67,7 +66,7 @@ pub fn make_ast(tokens: &Vec<Token>) -> Result<Box<Option<Ast>>, String> {
                     lexer::tokenize(&mut new_str, &mut new_tokens);
                     return make_ast(&new_tokens);
                 } else {
-                    return Ok(Box::new(Some(Ast::Leaf(x.clone(), Vec::new()))));
+                    return Ok(Box::new(Some(Ast::Leaf(x.clone(), vec![x.clone()]))));
                 }
             }
             _ => (),
@@ -77,7 +76,7 @@ pub fn make_ast(tokens: &Vec<Token>) -> Result<Box<Option<Ast>>, String> {
     let mut iter = tokens.iter();
     match iter.next() {
         Some(Token::Input(command)) => {
-            let mut args = Vec::new();
+            let mut args = vec![command.clone()];
             for tok in iter {
                 match tok {
                     Token::Operator(_) => return Err(String::from("Parsing error")),
