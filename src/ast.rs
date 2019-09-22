@@ -34,12 +34,28 @@ pub fn eval_ast(tree: Box<Option<Ast>>) -> Result<WaitStatus, String> {
                 return eval_ast(right_child);
             }
             return left_rv;
-        }
+        },
+        Some(Ast::Node(left_child, right_child, Op::Background)) => {
+            match fork() {
+                Ok(ForkResult::Parent {child, ..}) => {
+                    if right_child.is_some() {
+                        return eval_ast(right_child);
+                    }
+                    match WaitStatus::from_raw(child, 0) {
+                        Ok(ws) => Ok(ws),
+                        Err(e) => Err(String::from(e.description())),
+                    }
+                },
+                Ok(ForkResult::Child) => { 
+                    eval_ast(left_child);
+                    return Err(String::from("Execution error"))
+                },
+                Err(e)=> Err(String::from(e.description())),
+            }
+        },
         _ => Err(String::from("Unknown error")),
     }
 }
-
-
 
 fn success(status: &Result<WaitStatus, String>) -> bool {
     match *status {
