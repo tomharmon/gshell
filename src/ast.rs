@@ -3,7 +3,7 @@ use nix::sys::wait::{ waitpid, WaitStatus };
 use std::ffi::CString;
 use std::error::Error;
 
-use super::enums::{Op, Token};
+use super::enums::Op;
 
 #[derive(Debug)]
 pub enum Ast {
@@ -28,6 +28,33 @@ pub fn eval_ast(tree: Box<Option<Ast>>) -> Result<WaitStatus, String> {
                 Err(e)=> Err(String::from(e.description())),
             }
         },
+        Some(Ast::Node(left_child, right_child, Op::Semicolon)) => {
+            let left_rv = eval_ast(left_child);
+            if success(&left_rv) && right_child.is_some() {
+                return eval_ast(right_child);
+            }
+            return left_rv;
+        }
         _ => Err(String::from("Unknown error")),
     }
 }
+
+
+
+fn success(status: &Result<WaitStatus, String>) -> bool {
+    match *status {
+        Ok(s) => {
+            match s {
+                WaitStatus::Exited(_, code) => {
+                    if code != 0 {
+                        return false;
+                    }
+                    true
+                },
+                _ => false,
+            }
+        }
+        Err(_) => false,
+    }
+
+}   
