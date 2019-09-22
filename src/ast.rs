@@ -14,7 +14,9 @@ pub enum Ast {
 }
 
 pub fn eval_ast(tree: Box<Option<Ast>>) -> Option<i32> {
-    match *tree {x
+    None
+}
+   /* match *tree {x
         Some(Ast::Leaf(c, args)) => {
             match fork() {
                 Ok(ForkResult::Parent { child, .. }) => {
@@ -119,4 +121,4 @@ pub fn eval_ast(tree: Box<Option<Ast>>) -> Option<i32> {
         // }
         _ => None,
     }
-}
+}*/

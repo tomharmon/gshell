@@ -1,6 +1,7 @@
 use super::ast::Ast;
 use super::enums::{Op, Token};
 use super::lexer;
+use std::ffi::CString;
 
 fn find_last_occ(op: &Op, tokens: &Vec<Token>) -> Option<usize> {
     for n in (0..tokens.len()).rev() {
@@ -60,13 +61,13 @@ pub fn make_ast(tokens: &Vec<Token>) -> Result<Box<Option<Ast>>, String> {
         match &tokens[0] {
             Token::Input(x) => {
                 let s = x.to_str().unwrap();
-                if x.starts_with('(') && x.ends_with(')') {
-                    let mut new_str = &(x.as_str()[1..x.len() - 1]).to_string();
+                if s.starts_with('(') && s.ends_with(')') {
+                    let mut new_str = &(s[1..s.len() - 1]).to_string();
                     let mut new_tokens: Vec<Token> = Vec::new();
                     lexer::tokenize(&mut new_str, &mut new_tokens);
                     return make_ast(&new_tokens);
                 } else {
-                    return Ok(Box::new(Some(Ast::Leaf(String::from(x), Vec::new()))));
+                    return Ok(Box::new(Some(Ast::Leaf(x.clone(), Vec::new()))));
                 }
             }
             _ => (),
@@ -76,18 +77,17 @@ pub fn make_ast(tokens: &Vec<Token>) -> Result<Box<Option<Ast>>, String> {
     let mut iter = tokens.iter();
     match iter.next() {
         Some(Token::Input(command)) => {
-            let comm = String::from(command);
             let mut args = Vec::new();
             for tok in iter {
                 match tok {
                     Token::Operator(_) => return Err(String::from("Parsing error")),
                     //recursively parse if it has parenths eg: (echo hello; cat new && ok)
                     Token::Input(x) => {
-                        args.push(String::from(x));
+                        args.push(x.clone());
                     }
                 }
             }
-            return Ok(Box::new(Some(Ast::Leaf(comm, args))));
+            return Ok(Box::new(Some(Ast::Leaf(command.clone(), args))));
         }
         _ => return Ok(Box::new(None)),
     }
