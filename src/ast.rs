@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::process::{Command, Stdio};
+use std::os::unix::io::{AsRawFd, FromRawFd, RawFd};
 use std::thread;
 
 use super::enums::{Op, Token};
@@ -10,21 +11,26 @@ pub enum Ast {
     Leaf(String, Vec<String>),
 }
 
-pub fn eval_ast(tree: Box<Option<Ast>>) -> Option<i32> {
+pub fn eval_ast(tree: Box<Option<Ast>>, input: RawFd, output: RawFd) -> Option<i32> {
     match *tree {
         Some(Ast::Leaf(c, args)) => {
             let mut command = Command::new(c);
             command.args(args);
-            command.stdin(Stdio::inherit());
-            command.stdout(Stdio::inherit());
+            unsafe {
+                let stdin: Stdio = FromRawFd::from_raw_fd(input);
+                let stdout: Stdio = FromRawFd::from_raw_fd(output);
+                command.stdin(stdin);
+                command.stdout(stdout);
+            }
+            
             return command.status().expect("could not eval an ast leaf").code();
         }
         // check for semi colon
         Some(Ast::Node(left_child, right_child, Op::Semicolon)) => {
-            let left_rv = eval_ast(left_child);
+            let left_rv = eval_ast(left_child, input, output);
             match *right_child {
                 Some(ast) => {
-                    let right_rv = eval_ast(Box::new(Some(ast)));
+                    let right_rv = eval_ast(Box::new(Some(ast)), input, output);
                     match (left_rv, right_rv) {
                         (None, None) => return None,
                         (None, x) => return x,
@@ -38,24 +44,22 @@ pub fn eval_ast(tree: Box<Option<Ast>>) -> Option<i32> {
         //check for background operator
         Some(Ast::Node(left_child, right_child, Op::Background)) => {
             thread::spawn(move || {
-                eval_ast(left_child);
+                eval_ast(left_child, input, output);
             });
             match *right_child {
-                Some(ast) => return eval_ast(Box::new(Some(ast))),
+                Some(ast) => return eval_ast(Box::new(Some(ast)), input, output),
                 None => return None,
             }
         }
         // check for redirect left
         Some(Ast::Node(left_child, right_child, Op::RedirectLeft)) => {
-            // thread::spawn(move || {
-            //     std
-            // });
             match *right_child {
-                Some(Ast::Leaf(file, _trash)) => {
+                Some(Ast::Leaf(file_name, _trash)) => {
                     // thread::spawn(move || {
-                    //     eval_ast(left_child);
+                        let file = File::open(file_name).unwrap();
+                        return eval_ast(left_child, AsRawFd::as_raw_fd(&file), output);
                     // });
-                    return eval_ast(left_child);
+                    // return eval_ast(left_child);
                 }
                 _ => panic!("no file :( "),
             }
@@ -68,36 +72,36 @@ pub fn eval_ast(tree: Box<Option<Ast>>) -> Option<i32> {
         //     }
         // }
         // check for && or ||
-        Some(Ast::Node(left_child, right_child, Op::And)) => {
-            let left_rv = eval_ast(left_child);
-            match left_rv {
-                Some(rv) => {
-                    if rv == 0 {
-                        return eval_ast(right_child);
-                    } else {
-                        return left_rv;
-                    }
-                }
-                None => {
-                    return eval_ast(right_child);
-                }
-            }
-        }
-        Some(Ast::Node(left_child, right_child, Op::Or)) => {
-            let left_rv = eval_ast(left_child);
-            match left_rv {
-                Some(rv) => {
-                    if rv != 0 {
-                        return eval_ast(right_child);
-                    } else {
-                        return left_rv;
-                    }
-                }
-                None => {
-                    return None;
-                }
-            }
-        }
+        // Some(Ast::Node(left_child, right_child, Op::And)) => {
+        //     let left_rv = eval_ast(left_child);
+        //     match left_rv {
+        //         Some(rv) => {
+        //             if rv == 0 {
+        //                 return eval_ast(right_child);
+        //             } else {
+        //                 return left_rv;
+        //             }
+        //         }
+        //         None => {
+        //             return eval_ast(right_child);
+        //         }
+        //     }
+        // }
+        // Some(Ast::Node(left_child, right_child, Op::Or)) => {
+        //     let left_rv = eval_ast(left_child);
+        //     match left_rv {
+        //         Some(rv) => {
+        //             if rv != 0 {
+        //                 return eval_ast(right_child);
+        //             } else {
+        //                 return left_rv;
+        //             }
+        //         }
+        //         None => {
+        //             return None;
+        //         }
+        //     }
+        // }
         // check for |
         // Ast::Node(_, _, _) => {
         //     return None
