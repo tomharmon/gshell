@@ -1,6 +1,7 @@
 use std::fs::File;
-use std::process::{Command, Stdio};
+use std::mem;
 use std::os::unix::io::{AsRawFd, FromRawFd, RawFd};
+use std::process::{Command, Stdio};
 use std::thread;
 
 use super::enums::{Op, Token};
@@ -22,7 +23,6 @@ pub fn eval_ast(tree: Box<Option<Ast>>, input: RawFd, output: RawFd) -> Option<i
                 command.stdin(stdin);
                 command.stdout(stdout);
             }
-            
             return command.status().expect("could not eval an ast leaf").code();
         }
         // check for semi colon
@@ -55,54 +55,66 @@ pub fn eval_ast(tree: Box<Option<Ast>>, input: RawFd, output: RawFd) -> Option<i
         Some(Ast::Node(left_child, right_child, Op::RedirectLeft)) => {
             match *right_child {
                 Some(Ast::Leaf(file_name, _trash)) => {
-                    // thread::spawn(move || {
+                    let thread_handle = thread::spawn(move || {
                         let file = File::open(file_name).unwrap();
                         return eval_ast(left_child, AsRawFd::as_raw_fd(&file), output);
-                    // });
+                    });
+                    return thread_handle.join().unwrap();
                     // return eval_ast(left_child);
                 }
                 _ => panic!("no file :( "),
             }
         }
         // check for redirect right
-        // Some(Ast::Node(left_child, right_child, Op::RedirectRight)) => {
-        //     match *right_child {
-        //         Some(Ast::File(f)) => return eval_ast(&left_child.unwrap(), input, &mut Stdio::from(f), bg),
-        //         _ => panic!("no file :( "),
-        //     }
-        // }
+        Some(Ast::Node(left_child, right_child, Op::RedirectRight)) => match *right_child {
+            Some(Ast::Leaf(file_name, _trash)) => {
+                let thread_handle = thread::spawn(move || {
+                    let file = File::create(file_name).unwrap();
+                    return eval_ast(left_child, input, AsRawFd::as_raw_fd(&file));
+                });
+                return thread_handle.join().unwrap();
+            }
+            _ => panic!("no file :( "),
+        },
         // check for && or ||
-        // Some(Ast::Node(left_child, right_child, Op::And)) => {
-        //     let left_rv = eval_ast(left_child);
-        //     match left_rv {
-        //         Some(rv) => {
-        //             if rv == 0 {
-        //                 return eval_ast(right_child);
-        //             } else {
-        //                 return left_rv;
-        //             }
-        //         }
-        //         None => {
-        //             return eval_ast(right_child);
-        //         }
-        //     }
-        // }
-        // Some(Ast::Node(left_child, right_child, Op::Or)) => {
-        //     let left_rv = eval_ast(left_child);
-        //     match left_rv {
-        //         Some(rv) => {
-        //             if rv != 0 {
-        //                 return eval_ast(right_child);
-        //             } else {
-        //                 return left_rv;
-        //             }
-        //         }
-        //         None => {
-        //             return None;
-        //         }
-        //     }
-        // }
+        Some(Ast::Node(left_child, right_child, Op::And)) => {
+            let left_rv = eval_ast(left_child, input, output);
+            match left_rv {
+                Some(rv) => {
+                    if rv == 0 {
+                        return eval_ast(right_child, input, output);
+                    } else {
+                        return left_rv;
+                    }
+                }
+                None => {
+                    return eval_ast(right_child, input, output);
+                }
+            }
+        }
+        Some(Ast::Node(left_child, right_child, Op::Or)) => {
+            let left_rv = eval_ast(left_child, input, output);
+            match left_rv {
+                Some(rv) => {
+                    if rv != 0 {
+                        return eval_ast(right_child, input, output);
+                    } else {
+                        return left_rv;
+                    }
+                }
+                None => {
+                    return None;
+                }
+            }
+        }
         // check for |
+        // Some(Ast::Node(left_child, right_child, Op::Pipe)) => {
+        //     thread::spawn(move || {
+        //         eval_ast(left_child, input, output);
+        //         // eval_ast(right_child, output, output);
+        //     });
+        //     return None
+        // }
         // Ast::Node(_, _, _) => {
         //     return None
         // }
