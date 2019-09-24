@@ -1,6 +1,5 @@
 use std::io::{self, Write};
 use std::os::unix::io::AsRawFd;
-use std::os::unix::net::UnixStream;
 
 mod ast;
 mod enums;

@@ -1,11 +1,10 @@
+use libc;
 use std::fs::File;
-use std::mem;
 use std::os::unix::io::{AsRawFd, FromRawFd, RawFd};
 use std::process::{Command, Stdio};
 use std::thread;
-use libc;
 
-use super::enums::{Op, Token};
+use super::enums::Op;
 
 #[derive(Debug)]
 pub enum Ast {

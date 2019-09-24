@@ -22,5 +22,4 @@ pub enum Op {
     Or,
     And,
     Background,
-    Append,
 }
