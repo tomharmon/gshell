@@ -101,19 +101,25 @@ pub fn eval_ast(tree: Box<Option<Ast>>, input: RawFd, output: RawFd) -> Option<i
             }
         }
         // check for |
-        // Some(Ast::Node(left_child, right_child, Op::Pipe)) => {
-        //     thread::spawn(move || {
-        //         eval_ast(left_child, input, output);
-        //         // eval_ast(right_child, output, output);
-        //     });
-        //     return None
-        // }
-        // Ast::Node(_, _, _) => {
-        //     return None
-        // }
-        // Ast::File(_) => {
-        //     return None
-        // }
+        Some(Ast::Node(left_child, right_child, Op::Pipe)) => {
+            let mut pipes: [i32; 2] = [input, output];
+            unsafe {
+                libc::pipe(pipes.as_mut_ptr());
+            }
+            let left_rv = eval_ast(left_child, pipes[1], output);
+            match *right_child {
+                Some(ast) => {
+                    let right_rv = eval_ast(Box::new(Some(ast)), input, pipes[0]);
+                    match (left_rv, right_rv) {
+                        (None, None) => return None,
+                        (None, x) => return x,
+                        (x, None) => return x,
+                        (Some(x), Some(y)) => return if x != 0 { Some(x) } else { Some(y) },
+                    }
+                }
+                None => return left_rv
+            }
+        }
         _ => None,
     }
 }
