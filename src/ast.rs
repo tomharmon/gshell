@@ -3,6 +3,7 @@ use std::mem;
 use std::os::unix::io::{AsRawFd, FromRawFd, RawFd};
 use std::process::{Command, Stdio};
 use std::thread;
+use libc;
 
 use super::enums::{Op, Token};
 
@@ -18,8 +19,8 @@ pub fn eval_ast(tree: Box<Option<Ast>>, input: RawFd, output: RawFd) -> Option<i
             let mut command = Command::new(c);
             command.args(args);
             unsafe {
-                let stdin: Stdio = FromRawFd::from_raw_fd(input);
-                let stdout: Stdio = FromRawFd::from_raw_fd(output);
+                let stdin: Stdio = FromRawFd::from_raw_fd(libc::dup(input));
+                let stdout: Stdio = FromRawFd::from_raw_fd(libc::dup(output));
                 command.stdin(stdin);
                 command.stdout(stdout);
             }

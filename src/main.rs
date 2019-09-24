@@ -31,7 +31,7 @@ fn main() {
                 println!("{}", message);
             }
         }
-        break;
+        //break;
 
         // let socket = match UnixStream::connect("/dev/tty") {
         //     Ok(sock) => sock,
