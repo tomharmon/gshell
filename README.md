@@ -1,6 +1,6 @@
 # GSHELL
 
-gshell is a system shell written in rust.
+gshell is a system shell written in rust. It is only designed to work with Unix.
 
 ## Features
  - Supports all operators (`&&`,  `&`, `||`, `|`, `>`, `<`, `>>`)
