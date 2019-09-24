@@ -55,12 +55,8 @@ pub fn eval_ast(tree: Box<Option<Ast>>, input: RawFd, output: RawFd) -> Option<i
         Some(Ast::Node(left_child, right_child, Op::RedirectLeft)) => {
             match *right_child {
                 Some(Ast::Leaf(file_name, _trash)) => {
-                    let thread_handle = thread::spawn(move || {
-                        let file = File::open(file_name).unwrap();
-                        return eval_ast(left_child, AsRawFd::as_raw_fd(&file), output);
-                    });
-                    return thread_handle.join().unwrap();
-                    // return eval_ast(left_child);
+                    let file = File::open(file_name).unwrap();
+                    return eval_ast(left_child, AsRawFd::as_raw_fd(&file), output);
                 }
                 _ => panic!("no file :( "),
             }
@@ -68,11 +64,8 @@ pub fn eval_ast(tree: Box<Option<Ast>>, input: RawFd, output: RawFd) -> Option<i
         // check for redirect right
         Some(Ast::Node(left_child, right_child, Op::RedirectRight)) => match *right_child {
             Some(Ast::Leaf(file_name, _trash)) => {
-                let thread_handle = thread::spawn(move || {
-                    let file = File::create(file_name).unwrap();
-                    return eval_ast(left_child, input, AsRawFd::as_raw_fd(&file));
-                });
-                return thread_handle.join().unwrap();
+                let file = File::create(file_name).unwrap();
+                return eval_ast(left_child, input, AsRawFd::as_raw_fd(&file));
             }
             _ => panic!("no file :( "),
         },
