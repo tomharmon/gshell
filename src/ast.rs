@@ -106,18 +106,16 @@ pub fn eval_ast(tree: Box<Option<Ast>>, input: RawFd, output: RawFd) -> Option<i
             unsafe {
                 libc::pipe(pipes.as_mut_ptr());
             }
-            let left_rv = eval_ast(left_child, pipes[1], output);
-            match *right_child {
-                Some(ast) => {
-                    let right_rv = eval_ast(Box::new(Some(ast)), input, pipes[0]);
-                    match (left_rv, right_rv) {
-                        (None, None) => return None,
-                        (None, x) => return x,
-                        (x, None) => return x,
-                        (Some(x), Some(y)) => return if x != 0 { Some(x) } else { Some(y) },
-                    }
-                }
-                None => return left_rv
+            let thread_handle = thread::spawn(move || {
+               eval_ast(left_child, input, pipes[1])
+            });
+            let right_rv = eval_ast(right_child, pipes[0], output);
+            let left_rv = thread_handle.join().expect("thread error");
+            match (left_rv, right_rv) {
+                (None, None) => return None,
+                (None, x) => return x,
+                (x, None) => return x,
+                (Some(x), Some(y)) => return if x != 0 { Some(x) } else { Some(y) },
             }
         }
         _ => None,
