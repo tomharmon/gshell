@@ -2,6 +2,8 @@ use std::io::{self, Write};
 use std::os::unix::io::AsRawFd;
 use std::os::unix::net::UnixStream;
 
+use std::process::Stdio;
+
 mod ast;
 mod enums;
 mod lexer;
@@ -25,25 +27,11 @@ fn main() {
 
         match ast {
             Ok(ast) => {
-                ast::eval_ast(ast, AsRawFd::as_raw_fd(&io::stdin()), AsRawFd::as_raw_fd(&io::stdout()));
+                ast::eval_ast(ast);
             }
             Err(message) => {
                 println!("{}", message);
             }
         }
-        break;
-
-        // let socket = match UnixStream::connect("/dev/tty") {
-        //     Ok(sock) => sock,
-        //     Err(e) => {
-        //         println!("Couldn't connect: {:?}", e);
-        //         return
-        //     }
-        // };
-
-        // print!("gshell$");
-        // handle.write_all(b"hello world").expect("fail");
-        // io::stdout().write_all(b"hello world").expect("fail");
-        // io::stdout().flush().expect("couldn't print command prompt");
     }
 }
