@@ -1,10 +1,8 @@
 use std::fs::File;
-use std::mem;
-use std::os::unix::io::{AsRawFd, FromRawFd, RawFd};
-use std::process::{Command, Stdio, Child};
+use std::process::{Command, Stdio, Child, ChildStdin};
 use std::thread;
 
-use super::enums::{Op, Token};
+use super::enums::Op;
 
 #[derive(Debug)]
 pub enum Ast {
@@ -23,18 +21,26 @@ fn eval_child(child: &mut Option<Child>) -> Option<i32> {
             let exit_result = c.wait();
             match exit_result {
                 Ok(exit_status) => return exit_status.code(),
-                Err(child_error) => panic!("not sure what to do here")
+                Err(_) => panic!("not sure what to do here")
             }
         }
         None => return None
     }
 }
 
+// fn eval_child_not_option(child: &mut Child) -> Option<i32> {
+//     let exit_result = child.wait();
+//     match exit_result {
+//         Ok(exit_status) => return exit_status.code(),
+//         Err(_) => panic!("not sure what to do here")
+//     }
+// }
+
 fn _eval_ast(tree: Box<Option<Ast>>, input: Stdio, output: Stdio) -> Option<Child> {
     match *tree {
         Some(Ast::Leaf(c, args)) => {
-            println!("{:?}", input);
-            println!("{:?}", output);
+            // println!("{:?}", input);
+            // println!("{:?}", output);
             let mut command = Command::new(c);
             command.args(args);
             command.stdin(input);
@@ -43,29 +49,30 @@ fn _eval_ast(tree: Box<Option<Ast>>, input: Stdio, output: Stdio) -> Option<Chil
         }
         // check for semi colon
         Some(Ast::Node(left_tree, right_tree, Op::Semicolon)) => {
-            let mut left_child = _eval_ast(left_tree, input, output);
-            println!("{:?}", left_child);
-            let left_rv = eval_child(&mut left_child);
-            let left_child_unwrap = left_child.unwrap();
-            println!("{:?}", left_child_unwrap);
-            let right_child_input = left_child_unwrap.stdin.unwrap();
-            let right_child_output = left_child_unwrap.stdout.unwrap();
-            match *right_tree {
-                Some(ast) => {
-                    let mut right_child = _eval_ast(Box::new(Some(ast)), Stdio::from(right_child_input), Stdio::from(right_child_output));
-                    let right_rv = eval_child(&mut right_child);
-                    match (left_rv, right_rv) {
-                        (None, None) => return None,
-                        (None, x) => return right_child,
-                        // should return Some(left_child_unwrap)
-                        (x, None) => return None,
-                        // note: if left_rv.unwrap() != 0 should return Some(left_child_unwrap)
-                        (Some(_x), Some(_y)) => return if left_rv.unwrap() != 0 { right_child } else { right_child },
+            let mut left_child_proc = _eval_ast(left_tree, input, output);
+            let _left_rv = eval_child(&mut left_child_proc);
+            let right_child_input;
+            let right_child_output;
+            println!("{:?}", left_child_proc);
+            match left_child_proc {
+                Some(lc) => {
+                    match lc.stdin {
+                        Some(x) => right_child_input = Stdio::from(x),
+                        None => right_child_input = Stdio::inherit(),
+                    } 
+                    match lc.stdout {
+                        Some(x) => { println!("SOME"); right_child_output = Stdio::from(x) },
+                        None => { println!("NONE"); right_child_output = Stdio::inherit() },
                     }
                 }
-                // should return Some(left_child_unwrap)
-                None => return None,
+                None => {
+                    right_child_input = Stdio::inherit();
+                    right_child_output = Stdio::inherit();
+                }
+
             }
+            //Should sometimes return the left_child ... cannot rust good
+            return _eval_ast(right_tree, right_child_input, right_child_output);
         }
         //check for background operator
         // Some(Ast::Node(left_child, right_child, Op::Background)) => {
@@ -91,17 +98,17 @@ fn _eval_ast(tree: Box<Option<Ast>>, input: Stdio, output: Stdio) -> Option<Chil
         //         _ => panic!("no file :( "),
         //     }
         // }
-        // // check for redirect right
-        // Some(Ast::Node(left_child, right_child, Op::RedirectRight)) => match *right_child {
-        //     Some(Ast::Leaf(file_name, _trash)) => {
-        //         let thread_handle = thread::spawn(move || {
-        //             let file = File::create(file_name).unwrap();
-        //             return eval_ast(left_child, input, Stdio::from(file));
-        //         });
-        //         return thread_handle.join().unwrap();
-        //     }
-        //     _ => panic!("no file :( "),
-        // },
+        // check for redirect right
+        Some(Ast::Node(left_child, right_child, Op::RedirectRight)) => match *right_child {
+            Some(Ast::Leaf(file_name, _trash)) => {
+                //let thread_handle = thread::spawn(move || {
+                    let file = File::create(file_name).unwrap();
+                    return _eval_ast(left_child, input, Stdio::from(file));
+                //});
+                //return thread_handle.join().unwrap();
+            }
+            _ => panic!("no file :( "),
+        },
         // // check for && or ||
         // Some(Ast::Node(left_child, right_child, Op::And)) => {
         //     let left_rv = eval_ast(left_child, input, output);
