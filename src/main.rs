@@ -9,28 +9,28 @@ mod lexer;
 mod parser;
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    match args.get(1) {
-        Some(s) => {
-            let mut file = File::open(s).unwrap();
-            let mut input = String::new();
-            file.read_to_string(&mut input);
-            let mut tokens: Vec<enums::Token> = Vec::new();
-            lexer::tokenize(&mut input, &mut tokens);
+    // let args: Vec<String> = env::args().collect();
+    // // match args.get(1) {
+    // //     Some(s) => {
+    // //         let mut file = File::open(s).unwrap();
+    // //         let mut input = String::new();
+    // //         file.read_to_string(&mut input);
+    // //         let mut tokens: Vec<enums::Token> = Vec::new();
+    // //         lexer::tokenize(&mut input, &mut tokens);
 
-            let ast = parser::make_ast(&tokens);
-            match ast {
-                Ok(ast) => {
-                    ast::eval_ast(ast, AsRawFd::as_raw_fd(&io::stdin()), AsRawFd::as_raw_fd(&io::stdout()));
-                }
-                Err(message) => {
-                    println!("{}", message);
-                }
-            }
-            return;
-        }
-        _ => {}
-    }
+    // //         let ast = parser::make_ast(&tokens);
+    // //         match ast {
+    // //             Ok(ast) => {
+    // //                 ast::eval_ast(ast, AsRawFd::as_raw_fd(&io::stdin()), AsRawFd::as_raw_fd(&io::stdout()));
+    // //             }
+    // //             Err(message) => {
+    // //                 println!("{}", message);
+    // //             }
+    // //         }
+    // //         return;
+    // //     }
+    // //     _ => {}
+    // // }
 
     loop {
         print!("gshell$");
@@ -44,29 +44,13 @@ fn main() {
 
         let ast = parser::make_ast(&tokens);
 
-        println!("{:?}", ast);
-
         match ast {
             Ok(ast) => {
-                ast::eval_ast(ast, AsRawFd::as_raw_fd(&io::stdin()), AsRawFd::as_raw_fd(&io::stdout()));
+                ast::eval_ast(ast);
             }
             Err(message) => {
                 println!("{}", message);
             }
         }
-        //break;
-
-        // let socket = match UnixStream::connect("/dev/tty") {
-        //     Ok(sock) => sock,
-        //     Err(e) => {
-        //         println!("Couldn't connect: {:?}", e);
-        //         return
-        //     }
-        // };
-
-        // print!("gshell$");
-        // handle.write_all(b"hello world").expect("fail");
-        // io::stdout().write_all(b"hello world").expect("fail");
-        // io::stdout().flush().expect("couldn't print command prompt");
     }
 }
