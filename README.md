@@ -8,11 +8,16 @@ gshell is a system shell written in rust. It is only designed to work with Unix.
  - Single and double quote parsing
 
 
-## Planned Features
- - Command history
- - Tab autocomplete/fuzzy autocomplete
- - Environment variables
- - Full POSIX support
+## TODO
+ - Cleanup implementation
+ - Better error handling (no need for perfection yet - but better)
+ - Support cd
+ - Append operator
+ - Command history (up/down arrow key)
+ - Tab autocomplete
+ - left/right arrow key
+ - Environment variables?
+ - fuzzy autocomplete
  - Colors and themes
 
 
