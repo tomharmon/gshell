@@ -1,4 +1,4 @@
-use nix::unistd::{ForkResult, fork, close, dup, execvp };
+use nix::unistd::{ForkResult, fork, close, dup, execvp, pipe};
 use nix::sys::wait::{ waitpid, WaitStatus };
 use nix::sys::stat::Mode;
 use nix::fcntl::{open, OFlag};
@@ -8,6 +8,7 @@ use std::fs::File;
 use std::error::Error;
 use std::io::{stdin, stdout};
 use std::os::unix::io::AsRawFd;
+use std::process::exit;
 
 use super::enums::Op;
 
@@ -88,7 +89,8 @@ pub fn eval_ast(tree: Box<Option<Ast>>) -> Result<WaitStatus, String> {
                             close(stdin().as_raw_fd());
                             dup(file);
                             close(file);
-                            return eval_ast(left_child);
+                            eval_ast(left_child);
+                            exit(1)
                         }
                         _ => { return Err(String::from("Expected file after <")); }
                     }
@@ -111,7 +113,8 @@ pub fn eval_ast(tree: Box<Option<Ast>>) -> Result<WaitStatus, String> {
                             close(stdout().as_raw_fd());
                             dup(file);
                             close(file);
-                            return eval_ast(left_child);
+                            eval_ast(left_child);
+                            exit(1);
                         }
                         _ => { return Err(String::from("Expected file after <")); }
                     }
@@ -119,8 +122,39 @@ pub fn eval_ast(tree: Box<Option<Ast>>) -> Result<WaitStatus, String> {
                 Err(e)=> Err(String::from(e.description())),
             }
         },
+        Some(Ast::Node(left_child, right_child, Op::Pipe)) => {
+            match fork() {
+                Ok(ForkResult::Parent {child, ..}) => {
+                    match waitpid(child, None) {
+                        Ok(x) => Ok(x),
+                        Err(e) => Err(String::from(e.description()))
+                    }
+                },
+                Ok(ForkResult::Child) => {
+                   let p = pipe().unwrap();
+                   match fork() {
+                        Ok(ForkResult::Parent {child, ..}) => { 
+                            close(stdin().as_raw_fd());
+                            dup(p.0);
+                            close(p.1);
+                            eval_ast(right_child);
+                            waitpid(child, None);
+                            exit(1);
+                        },
+                        Ok(ForkResult::Child) => { 
+                            close(stdout().as_raw_fd());
+                            dup(p.1);
+                            close(p.0);
+                            eval_ast(left_child);
+                            exit(1);
+                        },
+                        Err(e)=> Err(String::from(e.description())),
+                   }
 
-
+                },
+                Err(e)=> Err(String::from(e.description())),
+            }
+        }
         _ => Err(String::from("Unknown error")),
     }
 }
