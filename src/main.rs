@@ -19,7 +19,7 @@ fn main() {
 
         let ast = parser::make_ast(&tokens);
 
-        println!("{:?}", ast);
+        //println!("{:?}", ast);
         match ast {
             Ok(ast) => {
                 ast::eval_ast(ast);

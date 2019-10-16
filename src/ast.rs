@@ -1,5 +1,8 @@
 use nix::unistd::{ForkResult, fork, close, dup, execvp };
 use nix::sys::wait::{ waitpid, WaitStatus };
+use nix::sys::stat::Mode;
+use nix::fcntl::{open, OFlag};
+use nix::NixPath;
 use std::ffi::CString;
 use std::fs::File;
 use std::error::Error;
@@ -81,7 +84,7 @@ pub fn eval_ast(tree: Box<Option<Ast>>) -> Result<WaitStatus, String> {
                 Ok(ForkResult::Child) => {
                     match *right_child {
                         Some(Ast::Leaf(fileName, _)) => {
-                            let file = File::open(fileName.into_string().unwrap()).unwrap().as_raw_fd();
+                            let file = open(fileName.as_c_str(), OFlag::O_RDONLY, Mode::all()).unwrap();
                             close(stdin().as_raw_fd());
                             dup(file);
                             close(file);
@@ -104,7 +107,7 @@ pub fn eval_ast(tree: Box<Option<Ast>>) -> Result<WaitStatus, String> {
                 Ok(ForkResult::Child) => {
                     match *right_child {
                         Some(Ast::Leaf(fileName, _)) => {
-                            let file = File::create(fileName.into_string().unwrap()).unwrap().as_raw_fd();
+                            let file = open(fileName.as_c_str(), OFlag::O_CREAT | OFlag::O_WRONLY, Mode::all()).unwrap();
                             close(stdout().as_raw_fd());
                             dup(file);
                             close(file);
