@@ -51,8 +51,8 @@ pub fn eval_ast(tree: Box<Option<Ast>>) -> Option<i32> {
                 None => return None,
             }
         }
-        // check for redirect left
-        Some(Ast::Node(left_child, right_child, Op::RedirectLeft)) => {
+        // check for redirect in <
+        Some(Ast::Node(left_child, right_child, Op::RedirectIn)) => {
             match fork() {
                 Ok(ForkResult::Parent {child, ..}) => {
                     match waitpid(child, None) {
@@ -76,8 +76,8 @@ pub fn eval_ast(tree: Box<Option<Ast>>) -> Option<i32> {
                 Err(e)=> None // uhh
             }
         }
-        // check for redirect right
-        Some(Ast::Node(left_child, right_child, Op::RedirectRight)) => {
+        // check for redirect out >
+        Some(Ast::Node(left_child, right_child, Op::RedirectOut)) => {
             match fork() {
                 Ok(ForkResult::Parent {child, ..}) => {
                     match waitpid(child, None) {

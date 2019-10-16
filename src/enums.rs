@@ -17,8 +17,8 @@ pub enum Token {
 pub enum Op {
     Semicolon,
     Pipe,
-    RedirectLeft,
-    RedirectRight,
+    RedirectIn,
+    RedirectOut,
     Or,
     And,
     Background,

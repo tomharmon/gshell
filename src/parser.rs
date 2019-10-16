@@ -23,8 +23,8 @@ pub fn make_ast(tokens: &Vec<Token>) -> Result<Box<Option<Ast>>, String> {
         Op::And,
         Op::Or,
         Op::Pipe,
-        Op::RedirectLeft,
-        Op::RedirectRight,
+        Op::RedirectIn,
+        Op::RedirectOut,
     ];
 
     for op in operators.iter() {

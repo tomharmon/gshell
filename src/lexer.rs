@@ -8,9 +8,9 @@ pub fn tokenize(input: &String, tokens: &mut Vec<Token>) {
         if c == ';' {
             tokens.push(Token::Operator(Op::Semicolon));
         } else if c == '<' {
-            tokens.push(Token::Operator(Op::RedirectLeft));
+            tokens.push(Token::Operator(Op::RedirectIn));
         } else if c == '>' {
-            tokens.push(Token::Operator(Op::RedirectRight));
+            tokens.push(Token::Operator(Op::RedirectOut));
         } else if c == '&' {
             if input_iter.peek().unwrap_or(&' ') == &'&' {
                 tokens.push(Token::Operator(Op::And));
