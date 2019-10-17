@@ -7,7 +7,7 @@
 /// ## Input
 /// An input is either a string starting with a program name (e.g. `grep`) followed by arguments, or
 /// a filename.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum Token {
     Operator(Op),
     Input(String),

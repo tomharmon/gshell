@@ -2,21 +2,21 @@ use super::ast::Ast;
 use super::enums::{Op, Token};
 use super::lexer;
 
-fn find_last_occ(op: &Op, tokens: &Vec<Token>) -> Option<usize> {
+fn find_last_occ(op: Op, tokens: &[Token]) -> Option<usize> {
     for n in (0..tokens.len()).rev() {
         match &tokens[n] {
             Token::Operator(o) => {
-                if o == op {
+                if o == &op {
                     return Some(n);
                 }
             }
             _ => continue,
         }
     }
-    return None;
+    None
 }
 
-pub fn make_ast(tokens: &Vec<Token>) -> Result<Box<Option<Ast>>, String> {
+pub fn make_ast(tokens: &[Token]) -> Result<Box<Option<Ast>>, String> {
     let operators = [
         Op::Semicolon,
         Op::Background,
@@ -28,7 +28,7 @@ pub fn make_ast(tokens: &Vec<Token>) -> Result<Box<Option<Ast>>, String> {
     ];
 
     for op in operators.iter() {
-        let idx = find_last_occ(&op, tokens);
+        let idx = find_last_occ(*op, tokens);
         match idx {
             Some(n) => {
                 if n == tokens.len() - 1 {
@@ -57,18 +57,13 @@ pub fn make_ast(tokens: &Vec<Token>) -> Result<Box<Option<Ast>>, String> {
     }
 
     if tokens.len() == 1 {
-        match &tokens[0] {
-            Token::Input(x) => {
-                if x.starts_with('(') && x.ends_with(')') {
-                    let mut new_str = &(x.as_str()[1..x.len() - 1]).to_string();
-                    let mut new_tokens: Vec<Token> = Vec::new();
-                    lexer::tokenize(&mut new_str, &mut new_tokens);
-                    return make_ast(&new_tokens);
-                } else {
-                    return Ok(Box::new(Some(Ast::Leaf(String::from(x), Vec::new()))));
-                }
+        if let Token::Input(x) = &tokens[0] {
+            if x.starts_with('(') && x.ends_with(')') {
+                let new_str = &(x.as_str()[1..x.len() - 1]).to_string();
+                let mut new_tokens: Vec<Token> = Vec::new();
+                lexer::tokenize(&new_str, &mut new_tokens);
+                return make_ast(&new_tokens);
             }
-            _ => (),
         }
     }
 
@@ -86,8 +81,8 @@ pub fn make_ast(tokens: &Vec<Token>) -> Result<Box<Option<Ast>>, String> {
                     }
                 }
             }
-            return Ok(Box::new(Some(Ast::Leaf(comm, args))));
+            Ok(Box::new(Some(Ast::Leaf(comm, args))))
         }
-        _ => return Ok(Box::new(None)),
+        _ => Ok(Box::new(None)),
     }
 }
