@@ -1,5 +1,4 @@
-use super::ast::Ast;
-use super::enums::{Op, Token};
+use super::enums::{Op, Token, Ast};
 use super::lexer;
 
 fn find_last_occ(op: Op, tokens: &[Token]) -> Option<usize> {
@@ -25,6 +24,7 @@ pub fn make_ast(tokens: &[Token]) -> Result<Box<Option<Ast>>, String> {
         Op::Pipe,
         Op::RedirectIn,
         Op::RedirectOut,
+        Op::Append
     ];
 
     for op in operators.iter() {

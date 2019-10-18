@@ -22,4 +22,11 @@ pub enum Op {
     Or,
     And,
     Background,
+    Append
+}
+
+#[derive(Debug)]
+pub enum Ast {
+    Node(Box<Option<Ast>>, Box<Option<Ast>>, Op),
+    Leaf(String, Vec<String>),
 }

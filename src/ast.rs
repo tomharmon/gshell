@@ -12,13 +12,7 @@ use nix::unistd::{close, dup, fork, pipe, ForkResult};
 use std::env;
 use std::path::Path;
 
-use super::enums::Op;
-
-#[derive(Debug)]
-pub enum Ast {
-    Node(Box<Option<Ast>>, Box<Option<Ast>>, Op),
-    Leaf(String, Vec<String>),
-}
+use super::enums::{Op, Ast};
 
 // return Result (so we can use `?` everywhere instead of unwrap), or Option?
 pub fn eval_ast(tree: Option<Ast>) -> Result<i32, String> {
@@ -145,6 +139,35 @@ pub fn eval_ast(tree: Option<Ast>) -> Result<i32, String> {
                     match open(
                         file_name.as_str(),
                         OFlag::O_CREAT | OFlag::O_TRUNC | OFlag::O_WRONLY,
+                        Mode::from_bits(420).unwrap(),
+                    ) {
+                        Ok(file) => {
+                            close(stdout().as_raw_fd()).unwrap();
+                            dup(file).unwrap();
+                            close(file).unwrap();
+                            match eval_ast(*left_child) {
+                                Ok(status) => exit(status),
+                                Err(_) => exit(-1),
+                            }
+                        }
+                        Err(e) => Err(format!("Could not open file {}: {}", file_name, e.description())),
+                    }
+                }
+                _ => panic!("Parser should have thrown error"),
+            },
+            Err(e) => Err(format!("Forking failed for '>' operator : {}", e.description())),
+        },
+        // check for append >>
+        Some(Ast::Node(left_child, right_child, Op::Append)) => match fork() {
+            Ok(ForkResult::Parent { child, .. }) => match waitpid(child, None) {
+                Ok(wait_status) => Ok(eval_wait_status(wait_status)),
+                Err(e) => Err(format!("Waiting failed with error message : {}", e.description())),
+            },
+            Ok(ForkResult::Child) => match *right_child {
+                Some(Ast::Leaf(file_name, _)) => {
+                    match open(
+                        file_name.as_str(),
+                        OFlag::O_CREAT | OFlag::O_APPEND | OFlag::O_WRONLY,
                         Mode::from_bits(420).unwrap(),
                     ) {
                         Ok(file) => {

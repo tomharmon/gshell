@@ -10,7 +10,12 @@ pub fn tokenize(input: &str, tokens: &mut Vec<Token>) -> Result<(), String> {
         } else if c == '<' {
             tokens.push(Token::Operator(Op::RedirectIn));
         } else if c == '>' {
-            tokens.push(Token::Operator(Op::RedirectOut));
+            if input_iter.peek().unwrap_or(&' ') == &'>' {
+                tokens.push(Token::Operator(Op::Append));
+                input_iter.next();
+            } else {
+                tokens.push(Token::Operator(Op::RedirectOut));
+            }
         } else if c == '&' {
             if input_iter.peek().unwrap_or(&' ') == &'&' {
                 tokens.push(Token::Operator(Op::And));

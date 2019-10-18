@@ -3,14 +3,12 @@
 gshell is a system shell written in rust. It is only designed to work with Unix.
 
 ## Features
- - Supports all operators (`&&`,  `&`, `||`, `|`, `>`, `<`, `>>`)
+ - Supports all operators (`;`, `&&`,  `&`, `||`, `|`, `>`, `<`, `>>`)
  - Executing programs
  - Single and double quote parsing
 
 
 ## TODO
- - Better error handling (no need for perfection yet - but better)
- - Append operator
  - Command history (up/down arrow key)
  - Tab autocomplete
  - left/right arrow key
