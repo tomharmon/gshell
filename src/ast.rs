@@ -59,12 +59,18 @@ pub fn eval_ast(tree: Option<Ast>) -> Option<i32> {
         }
         //check for background operator
         Some(Ast::Node(left_child, right_child, Op::Background)) => {
-            thread::spawn(move || {
-                eval_ast(*left_child);
-            });
-            match *right_child {
-                Some(ast) => eval_ast(Some(ast)),
-                None => None,
+            match fork() {
+                Ok(ForkResult::Parent { .. }) => {
+                    match *right_child {
+                        Some(_) => eval_ast(*right_child),
+                        _ => None
+                    }
+                },
+                Ok(ForkResult::Child) => {
+                    eval_ast(*left_child);
+                    exit(1); //uhhhh
+                }
+                Err(_) => None, // uhh
             }
         }
         // check for redirect in <
