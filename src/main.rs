@@ -1,5 +1,5 @@
 use std::env;
-use std::io::{self, Write, stdin};
+use std::io::{self, Write, Read, stdin};
 use std::os::unix::io::AsRawFd;
 
 use nix::fcntl::{open, OFlag};
@@ -10,6 +10,28 @@ mod ast;
 mod enums;
 mod lexer;
 mod parser;
+
+
+fn read_line_smart(buff: &mut String) -> u8 {
+    let mut prev : u8 = 0;
+    let mut length = 0;
+    for c in io::stdin().bytes() {
+        match c {
+            Ok(ch) => {
+                buff.push(ch as char);
+                length += 1;
+                if ch  == '\n' as u8 {
+                    if prev != '\\' as u8 { break; }
+                    else { buff.pop(); buff.pop(); }
+                }
+                prev = ch;
+            }
+            Err(e) => panic!("Cannot read, Am blind {}", e)
+        }
+    }
+    length
+}
+
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -32,7 +54,7 @@ fn main() {
             io::stdout().flush().expect("couldn't print command prompt");
         }
         let mut input = String::new();
-        let bytes = io::stdin().read_line(&mut input).expect("failed to read line");
+        let bytes = read_line_smart(&mut input);
         if bytes == 0 { break; }
         let mut tokens: Vec<enums::Token> = Vec::new();
 
