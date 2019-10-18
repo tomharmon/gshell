@@ -9,9 +9,7 @@ gshell is a system shell written in rust. It is only designed to work with Unix.
 
 
 ## TODO
- - Cleanup implementation
  - Better error handling (no need for perfection yet - but better)
- - Support cd
  - Append operator
  - Command history (up/down arrow key)
  - Tab autocomplete
