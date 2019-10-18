@@ -1,5 +1,5 @@
 use std::env;
-use std::io::{self, Write, Read, stdin};
+use std::io::{self, stdin, Read, Write};
 use std::os::unix::io::AsRawFd;
 
 use nix::fcntl::{open, OFlag};
@@ -11,35 +11,36 @@ mod enums;
 mod lexer;
 mod parser;
 
-
 fn read_line_smart(buff: &mut String) -> u8 {
-    let mut prev : u8 = 0;
+    let mut prev: u8 = 0;
     let mut length = 0;
     for c in io::stdin().bytes() {
         match c {
             Ok(ch) => {
                 buff.push(ch as char);
                 length += 1;
-                if ch  == '\n' as u8 {
-                    if prev != '\\' as u8 { break; }
-                    else { buff.pop(); buff.pop(); }
+                if ch == '\n' as u8 {
+                    if prev != '\\' as u8 {
+                        break;
+                    } else {
+                        buff.pop();
+                        buff.pop();
+                    }
                 }
                 prev = ch;
             }
-            Err(e) => panic!("Cannot read, Am blind {}", e)
+            Err(e) => panic!("Cannot read, Am blind {}", e),
         }
     }
     length
 }
-
 
 fn main() {
     let args: Vec<String> = env::args().collect();
     let mut should_prompt = true;
     match args.get(1) {
         Some(s) => {
-            let file = open(s.as_str(), OFlag::O_RDONLY, Mode::all())
-                                .expect("could not open file to read in");
+            let file = open(s.as_str(), OFlag::O_RDONLY, Mode::all()).expect("could not open file to read in");
             close(stdin().as_raw_fd()).unwrap();
             dup(file).unwrap();
             close(file).unwrap();
@@ -55,17 +56,26 @@ fn main() {
         }
         let mut input = String::new();
         let bytes = read_line_smart(&mut input);
-        if bytes == 0 { break; }
+        if bytes == 0 {
+            break;
+        }
         let mut tokens: Vec<enums::Token> = Vec::new();
 
-        lexer::tokenize(&mut input, &mut tokens);
+        match lexer::tokenize(&mut input, &mut tokens) {
+            Ok(_) => {}
+            Err(message) => {
+                println!("{}", message);
+                continue;
+            }
+        }
 
         let ast = parser::make_ast(&tokens);
 
         match ast {
-            Ok(ast) => {
-                ast::eval_ast(*ast);
-            }
+            Ok(ast) => match ast::eval_ast(*ast) {
+                Ok(_) => {}
+                Err(e) => println!("{}", e),
+            },
             Err(message) => {
                 println!("{}", message);
             }

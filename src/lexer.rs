@@ -2,7 +2,7 @@ use super::enums::{Op, Token};
 use std::iter::Peekable;
 
 /// Converts a shell input string into a vector of tokens.
-pub fn tokenize(input: &str, tokens: &mut Vec<Token>) {
+pub fn tokenize(input: &str, tokens: &mut Vec<Token>) -> Result<(), String> {
     let mut input_iter = input.chars().peekable();
     while let Some(c) = input_iter.next() {
         if c == ';' {
@@ -35,8 +35,12 @@ pub fn tokenize(input: &str, tokens: &mut Vec<Token>) {
             tokens.push(Token::Input(s));
         } else if c == '(' {
             let mut s = String::from("(");
-            read_until_close_paren(&mut s, &mut input_iter);
+            if !read_until_close_paren(&mut s, &mut input_iter) {
+                return Err(String::from("Mismatched parenths"));
+            }
             tokens.push(Token::Input(s));
+        } else if c == ')' {
+            return Err(String::from("Mismatched parenths"));
         } else if !c.is_whitespace() {
             let mut s = c.to_string();
             let closure = |x: char| -> bool {
@@ -46,9 +50,10 @@ pub fn tokenize(input: &str, tokens: &mut Vec<Token>) {
             tokens.push(Token::Input(s));
         }
     }
+    Ok(())
 }
 
-fn read_until_close_paren<T>(s: &mut String, iter: &mut Peekable<T>)
+fn read_until_close_paren<T>(s: &mut String, iter: &mut Peekable<T>) -> bool
 where
     T: Iterator<Item = char>,
 {
@@ -72,9 +77,10 @@ where
         }
         s.push(c);
         if starts == ends {
-            break;
+            return true;
         }
     }
+    false
 }
 
 /// Return `s` from start until `predicate` is true, exclusive.

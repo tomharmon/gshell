@@ -61,7 +61,10 @@ pub fn make_ast(tokens: &[Token]) -> Result<Box<Option<Ast>>, String> {
             if x.starts_with('(') && x.ends_with(')') {
                 let new_str = &(x.as_str()[1..x.len() - 1]).to_string();
                 let mut new_tokens: Vec<Token> = Vec::new();
-                lexer::tokenize(&new_str, &mut new_tokens);
+                match lexer::tokenize(&new_str, &mut new_tokens) {
+                    Ok(_) => {}
+                    Err(message) => return Err(message),
+                }
                 return make_ast(&new_tokens);
             }
         }
@@ -74,8 +77,7 @@ pub fn make_ast(tokens: &[Token]) -> Result<Box<Option<Ast>>, String> {
             let mut args = Vec::new();
             for tok in iter {
                 match tok {
-                    Token::Operator(_) => return Err(String::from("Parsing error")),
-                    //recursively parse if it has parenths eg: (echo hello; cat new && ok)
+                    Token::Operator(_) => return Err(String::from("Parsing error, should never get this error")),
                     Token::Input(x) => {
                         args.push(String::from(x));
                     }
