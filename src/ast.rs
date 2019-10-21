@@ -12,7 +12,7 @@ use nix::unistd::{close, dup, fork, pipe, ForkResult};
 use std::env;
 use std::path::Path;
 
-use super::enums::{Op, Ast};
+use super::enums::{Ast, Op};
 
 // return Result (so we can use `?` everywhere instead of unwrap), or Option?
 pub fn eval_ast(tree: Option<Ast>) -> Result<i32, String> {

@@ -22,7 +22,7 @@ pub enum Op {
     Or,
     And,
     Background,
-    Append
+    Append,
 }
 
 #[derive(Debug)]
