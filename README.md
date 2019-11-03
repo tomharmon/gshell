@@ -6,16 +6,15 @@ gshell is a system shell written in rust. It is only designed to work with Unix.
  - Supports all operators (`;`, `&&`,  `&`, `||`, `|`, `>`, `<`, `>>`)
  - Executing programs
  - Single and double quote parsing
-
-
-## TODO
  - Command history (up/down arrow key)
  - Tab autocomplete
  - left/right arrow key
+
+## TODO
  - Environment variables?
  - fuzzy autocomplete
  - Colors and themes
-
+ - Add config
 
  ## Configuration
 
